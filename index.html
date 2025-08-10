@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Capture Spotify Redirect URL</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+      
+        :root {
+            --color-background: #121212;
+            --color-surface: rgba(40, 40, 40, 0.6);
+            --color-primary: #1DB954;
+            --color-primary-hover: #1ED760;
+            --color-text: #EAEAEA;
+            --color-text-muted: #A0A0A0;
+            --color-border: rgba(255, 255, 255, 0.1);
+            --shadow-soft: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            --font-family-main: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-family-main);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: var(--color-background);
+            color: var(--color-text);
+            padding: 40px 20px;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(29, 185, 84, 0.15), transparent 70%);
+            filter: blur(100px);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .container {
+            max-width: 750px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+        }
+
+        .header {
+            text-align: center;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeIn 0.8s 0.2s ease-out forwards;
+        }
+
+        h1 {
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 700;
+            margin: 0 0 10px 0;
+            letter-spacing: -1px;
+            background: -webkit-linear-gradient(45deg, var(--color-primary-hover), var(--color-primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header p {
+            font-size: clamp(1rem, 2.5vw, 1.2rem);
+            color: var(--color-text-muted);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .step-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: var(--shadow-soft);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            text-align: center;
+            transition: transform 0.3s ease-out, box-shadow 0.3s ease-out;
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        .step-card.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .step-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        .step-title {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .step-number {
+            background-color: var(--color-primary);
+            color: var(--color-background);
+            font-weight: 700;
+            font-size: 1.2rem;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            flex-shrink: 0;
+        }
+
+        h2 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .step-card p {
+            color: var(--color-text-muted);
+            font-size: 1.1rem;
+            line-height: 1.7;
+        }
+
+        .url-display-box {
+            background-color: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--color-border);
+            padding: 20px;
+            border-radius: 12px;
+            font-family: "SF Mono", "Fira Code", "Courier New", monospace;
+            font-size: 1.1rem;
+            color: var(--color-primary-hover);
+            word-break: break-all;
+            text-align: left;
+            margin-top: 20px;
+            position: relative;
+        }
+
+        .copy-button {
+            background-color: var(--color-primary);
+            color: #FFFFFF;
+            border: none;
+            padding: 18px 40px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            font-family: var(--font-family-main);
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+            box-shadow: 0 4px 20px rgba(29, 185, 84, 0.3);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .copy-button:hover {
+            background-color: var(--color-primary-hover);
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 7px 25px rgba(29, 185, 84, 0.4);
+        }
+
+        .copy-button:active {
+            transform: translateY(0) scale(1);
+        }
+        
+        .copy-button .text-original,
+        .copy-button .text-success {
+            transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+        }
+
+        .copy-button .text-success {
+            position: absolute;
+            transform: translateY(100%);
+            opacity: 0;
+        }
+
+        .copy-button.copied .text-original {
+            transform: translateY(-100%);
+            opacity: 0;
+        }
+
+        .copy-button.copied .text-success {
+            position: relative;
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .image-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            border: 1px solid var(--color-border);
+            margin-top: 20px;
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <main class="container">
+        <header class="header">
+            <h1>Capture Your URL</h1>
+            <p>You've been redirected here after authorizing with Spotify. Follow the steps below to complete the process.</p>
+        </header>
+
+        <section class="step-card">
+            <div class="step-title">
+                <div class="step-number">1</div>
+                <h2>Check Your Address Bar</h2>
+            </div>
+            <p>The image below shows where your browser's address bar is located. This entire line contains the special code we need.</p>
+            <div class="image-container">
+                <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA+gAAACCCAMAAAB1i3daAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAPUExURQAAAP8A//9A/zBgyIBgHwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB+cIFA4XJ6B/24gAAAQPSURBVHja7dwJd+JAFAXQ47O197/VevcCAwzM8Bw3mZ+j7LpYtC0MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADcY+z3W5/j0+PjM+Px8Rnh1fEx4vX4+Iz4+nif8N7i85J/nZ/Oic/35+dkeXl+Pgee3p+fC4/vz2+S8/vzA+H9/fnR8fX8/ID4cn5+RHx5f/5ifPH+/ER88eD+jPjzwf2R8f2D+yPj6/sH4oP9+/uD8YP7A+ED/fv7g/GD+wPhg/v7B8Kj/fuHQrD/fuHQrD/fuFQrD/fuGQTD/fvGQrD/fuGQTD/fuGRLPz/vyQ8fr+/PC4/vL88Ir68vjwqvx4TGx9/jxGPj7/ETh//xI4v78SO7+/Ejm/vxI5v78iOT+/Ejg/vxI/r7+SP6+/kj+vv5I/r7+iO6+/kjuvv5I7r7+iO6+/ojuviMI9u8IAv37giC5f0eQ3L8jyO7fEWQB3L8jyAK4f0cQB3D/jiAG4P4dQRDdvyMIgv07ghCA+3cEAAB/5j3OZyL+R/x9/mf84/zP+Af5n/Fv8j/jv+R/xu/k/8b/xP+M38z/jN/M/4zfzP+M38z/jB/L/x/k/8Z/yT/M/5R/m/8o/xf+Uf5v/KP8n/lH+X/yj/K/5R/lP8r/yD/K/8g/xv/IP8b/yD/G/8g/xv/IP8r/yj/Lf8s/yz/Lf8s/yz/LP8s/yz/LP8r/y//K/8v/yv/L/8r/y//K/8v/yv/K/8r/yb/J/8n/yf/J/8n/yf/J/8n/yf/Lv8u/y7/Lv8u/y7/Lv8u/y7/Lv8q/yr/Kv8q/yr/Kv8q/yr/Kv8q/yr/Kv8k/yT/JP8k/yT/JP8k/yT/JP8s/yz/LP8s/yz/LP8s/yz/LP8s/yz/LP8q/yr/Kv8q/yr/Kv8q/yr/Kv8q/yr/Kv8u/y7/Lv8u/y7/Lv8u/y7/Lv8u/y7/Lv8n/yf/J/8n/yf/J/8n/yf/J/8n/yf/J/8k/yT/JP8k/yT/JP8k/yT/JP8k/yT/Kv8q/yr/Kv8q/yr/Kv8q/yr/Kv8q/yr/LP8s/yz/LP8s/yz/LP8s/yz/LP8s/yz/Lv8u/y7/Lv8u/y7/Lv8u/y7/Lv8u/y7/J/8n/yf/J/8n/yf/J/8n/yf/J/8n/yf/JP8k/yT/JP8k/yT/JP8k/yT/JP8k/yz/LP8s/yz/LP8s/yz/LP8s/yz/LP8s/yr/Kv8q/yr/Kv8q/yr/Kv8q/yr/Kv8q/y7/Lv8u/y7/Lv8u/y7/Lv8u/y7/Lv8n/yf/J/8n/yf/J/8n/yf/J/8n/yf/J/8k/yT/JP8k/yT/JP8k/yT/JP8k/wEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgH/bPy1/K5G65kSyAAAAAElFTkSuQmCC" alt="A diagram showing the address bar at the top of a web browser.">
+            </div>
+        </section>
+
+        <section class="step-card">
+            <div class="step-title">
+                <div class="step-number">2</div>
+                <h2>Copy the Detected URL</h2>
+            </div>
+            <p>This page has automatically detected the full URL for you. Click the button below to instantly copy it to your clipboard.</p>
+            <div class="url-display-box" id="urlDisplay">Detecting URL...</div>
+            <button class="copy-button" id="copyButton">
+                <span class="text-original">Copy URL</span>
+                <span class="text-success">✔ Copied!</span>
+            </button>
+        </section>
+
+        <section class="step-card">
+            <div class="step-title">
+                <div class="step-number">3</div>
+                <h2>Paste and Complete</h2>
+            </div>
+            <p>Finally, return to the application or terminal window that sent you here and paste the URL to finish the authentication.</p>
+        </section>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlDisplayBox = document.getElementById('urlDisplay');
+            const copyButton = document.getElementById('copyButton');
+            
+            const fullUrl = window.location.href;
+            urlDisplayBox.textContent = fullUrl;
+
+            copyButton.addEventListener('click', () => {
+                if (copyButton.classList.contains('copied')) return;
+
+                navigator.clipboard.writeText(fullUrl).then(() => {
+                    copyButton.classList.add('copied');
+                    setTimeout(() => {
+                        copyButton.classList.remove('copied');
+                    }, 2500);
+                }).catch(err => {
+                    console.error('Failed to copy URL: ', err);
+                    alert('Could not copy URL automatically. Please copy it manually from the box.');
+                });
+            });
+
+            const animatedCards = document.querySelectorAll('.step-card');
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry, index) => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.transition = `opacity 0.6s ease-out ${index * 0.2}s, transform 0.6s ease-out ${index * 0.2}s`;
+                        entry.target.classList.add('visible');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, {
+                threshold: 0.1
+            });
+
+            animatedCards.forEach(card => {
+                observer.observe(card);
+            });
+        });
+    </script>
+
+</body>
+</html>
