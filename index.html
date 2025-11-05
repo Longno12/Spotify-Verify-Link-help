@@ -1,317 +1,393 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Capture Spotify Redirect URL</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-      
-        :root {
-            --color-background: #121212;
-            --color-surface: rgba(40, 40, 40, 0.6);
-            --color-primary: #1DB954;
-            --color-primary-hover: #1ED760;
-            --color-text: #EAEAEA;
-            --color-text-muted: #A0A0A0;
-            --color-border: rgba(255, 255, 255, 0.1);
-            --shadow-soft: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-            --font-family-main: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        }
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Your Wrapped — Vanilla JS</title>
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --panel: #121212;
+      --panel2: #1a1a1a;
+      --border: #2e2e2e;
+      --text: #fafafa;
+      --muted: #b3b3b3;
+      --chip: #2a2a2a;
+      --white: #fff;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; background: var(--bg); color: var(--text); }
+    .container { max-width: 1120px; margin: 0 auto; padding: 40px 24px; }
+    .header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .logo { width: 40px; height: 40px; border-radius: 12px; background: var(--white); }
+    .title { font-weight: 800; font-size: 28px; }
+    .subtitle { color: var(--muted); font-size: 13px; }
+    .btn { cursor: pointer; padding: 10px 16px; border-radius: 12px; border: 1px solid var(--border); background: var(--panel2); color: var(--text); font-weight: 600; }
+    .btn.primary { background: var(--white); color: #111; border-color: var(--white); }
+    .btn:hover { filter: brightness(1.05); }
+    .profile { display: flex; align-items: center; gap: 10px; }
+    .avatar { width: 44px; height: 44px; border-radius: 999px; overflow: hidden; background: #333; display:flex; align-items:center; justify-content:center; font-weight:700; }
 
-        *, *::before, *::after {
-            box-sizing: border-box;
-        }
+    .notice { padding: 14px; border: 1px solid var(--border); background: #121212; border-radius: 12px; color: #ddd; margin-bottom: 18px; }
 
-        html {
-            scroll-behavior: smooth;
-        }
+    .tabs { display: flex; gap: 8px; margin: 20px 0; }
+    .tab { padding: 8px 14px; border-radius: 10px; border:1px solid var(--border); background: var(--panel2); color: var(--text); font-size: 14px; }
+    .tab.active { background: var(--white); color: #111; border-color: var(--white); }
 
-        body {
-            font-family: var(--font-family-main);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            background-color: var(--color-background);
-            color: var(--color-text);
-            padding: 40px 20px;
-            overflow-x: hidden;
-            position: relative;
-        }
+    .grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+    @media (min-width: 768px) { .grid { grid-template-columns: 1fr 1fr; } }
+    @media (min-width: 1024px) { .grid { grid-template-columns: 1fr 1fr 1fr; } }
 
-        body::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 600px;
-            height: 600px;
-            background: radial-gradient(circle, rgba(29, 185, 84, 0.15), transparent 70%);
-            filter: blur(100px);
-            z-index: -1;
-            pointer-events: none;
-        }
+    .card { background: linear-gradient(135deg, #0f0f0f, #161616); border: 1px solid var(--border); border-radius: 16px; padding: 18px; }
+    .card h3 { margin: 0 0 12px; font-size: 18px; }
+    .list { list-style: none; padding: 0; margin: 0; }
+    .row { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
+    .rank { width: 22px; color: #a0a0a0; text-align: right; }
+    .thumb { width: 40px; height: 40px; border-radius: 8px; background: #2a2a2a; object-fit: cover; }
+    .meta { flex: 1; min-width: 0; }
+    .meta .name { font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .meta .sub { font-size: 12px; color: #9c9c9c; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        .container {
-            max-width: 750px;
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            gap: 40px;
-        }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip { background: #1f1f1f; border: 1px solid var(--border); color: var(--text); padding: 6px 10px; border-radius: 999px; font-size: 12px; }
 
-        .header {
-            text-align: center;
-            opacity: 0;
-            transform: translateY(20px);
-            animation: fadeIn 0.8s 0.2s ease-out forwards;
-        }
+    .bar { margin-bottom: 8px; }
+    .bar-top { display:flex; justify-content: space-between; font-size: 11px; color: #bdbdbd; }
+    .bar-rail { height: 8px; background: #2a2a2a; border-radius: 6px; overflow: hidden; }
+    .bar-fill { height: 100%; background: #fff; width: 0; }
 
-        h1 {
-            font-size: clamp(2rem, 5vw, 3.5rem);
-            font-weight: 700;
-            margin: 0 0 10px 0;
-            letter-spacing: -1px;
-            background: -webkit-linear-gradient(45deg, var(--color-primary-hover), var(--color-primary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
+    .recent { max-height: 320px; overflow: auto; padding-right: 4px; }
+    .muted { color: #bfbfbf; }
 
-        .header p {
-            font-size: clamp(1rem, 2.5vw, 1.2rem);
-            color: var(--color-text-muted);
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        .step-card {
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
-            border-radius: 16px;
-            padding: 30px;
-            box-shadow: var(--shadow-soft);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            text-align: center;
-            transition: transform 0.3s ease-out, box-shadow 0.3s ease-out;
-            opacity: 0;
-            transform: translateY(30px);
-        }
-
-        .step-card.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .step-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.5);
-        }
-
-        .step-title {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .step-number {
-            background-color: var(--color-primary);
-            color: var(--color-background);
-            font-weight: 700;
-            font-size: 1.2rem;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: grid;
-            place-items: center;
-            flex-shrink: 0;
-        }
-
-        h2 {
-            font-size: 1.8rem;
-            font-weight: 600;
-            margin: 0;
-        }
-
-        .step-card p {
-            color: var(--color-text-muted);
-            font-size: 1.1rem;
-            line-height: 1.7;
-        }
-
-        .url-display-box {
-            background-color: rgba(0, 0, 0, 0.4);
-            border: 1px solid var(--color-border);
-            padding: 20px;
-            border-radius: 12px;
-            font-family: "SF Mono", "Fira Code", "Courier New", monospace;
-            font-size: 1.1rem;
-            color: var(--color-primary-hover);
-            word-break: break-all;
-            text-align: left;
-            margin-top: 20px;
-            position: relative;
-        }
-
-        .copy-button {
-            background-color: var(--color-primary);
-            color: #FFFFFF;
-            border: none;
-            padding: 18px 40px;
-            font-size: 1.2rem;
-            font-weight: 600;
-            font-family: var(--font-family-main);
-            border-radius: 50px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 20px;
-            box-shadow: 0 4px 20px rgba(29, 185, 84, 0.3);
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .copy-button:hover {
-            background-color: var(--color-primary-hover);
-            transform: translateY(-3px) scale(1.05);
-            box-shadow: 0 7px 25px rgba(29, 185, 84, 0.4);
-        }
-
-        .copy-button:active {
-            transform: translateY(0) scale(1);
-        }
-        
-        .copy-button .text-original,
-        .copy-button .text-success {
-            transition: transform 0.3s ease-out, opacity 0.3s ease-out;
-        }
-
-        .copy-button .text-success {
-            position: absolute;
-            transform: translateY(100%);
-            opacity: 0;
-        }
-
-        .copy-button.copied .text-original {
-            transform: translateY(-100%);
-            opacity: 0;
-        }
-
-        .copy-button.copied .text-success {
-            position: relative;
-            transform: translateY(0);
-            opacity: 1;
-        }
-
-        .image-container img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 8px;
-            border: 1px solid var(--color-border);
-            margin-top: 20px;
-        }
-
-        @keyframes fadeIn {
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-    </style>
+    .footer { margin-top: 28px; text-align: center; color: #9b9b9b; font-size: 12px; }
+  </style>
 </head>
 <body>
+  <div class="container">
+    <div class="header">
+      <div class="brand">
+        <div class="logo"></div>
+        <div>
+          <div class="title">Your Wrapped</div>
+          <div class="subtitle">Personal Spotify stats — privately, in your browser.</div>
+        </div>
+      </div>
+      <div id="authArea"></div>
+    </div>
 
-    <main class="container">
-        <header class="header">
-            <h1>Capture Your URL</h1>
-            <p>You've been redirected here after authorizing with Spotify. Follow the steps below to complete the process.</p>
-        </header>
+    <div id="setup" class="notice" style="display:none">
+      <strong>Setup required:</strong>
+      Edit <code>CLIENT_ID</code> and (optionally) <code>REDIRECT_URI</code> inside this file, then click “Log in with Spotify”.
+    </div>
 
-        <section class="step-card">
-            <div class="step-title">
-                <div class="step-number">1</div>
-                <h2>Check Your Address Bar</h2>
-            </div>
-            <p>The image below shows where your browser's address bar is located. This entire line contains the special code we need.</p>
-            <div class="image-container">
-                <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA+gAAACCCAMAAAB1i3daAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAPUExURQAAAP8A//9A/zBgyIBgHwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB+cIFA4XJ6B/24gAAAQPSURBVHja7dwJd+JAFAXQ47O197/VevcCAwzM8Bw3mZ+j7LpYtC0MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADcY+z3W5/j0+PjM+Px8Rnh1fEx4vX4+Iz4+nif8N7i85J/nZ/Oic/35+dkeXl+Pgee3p+fC4/vz2+S8/vzA+H9/fnR8fX8/ID4cn5+RHx5f/5ifPH+/ER88eD+jPjzwf2R8f2D+yPj6/sH4oP9+/uD8YP7A+ED/fv7g/GD+wPhg/v7B8Kj/fuHQrD/fuHQrD/fuFQrD/fuGQTD/fvGQrD/fuGQTD/fuGRLPz/vyQ8fr+/PC4/vL88Ir68vjwqvx4TGx9/jxGPj7/ETh//xI4v78SO7+/Ejm/vxI5v78iOT+/Ejg/vxI/r7+SP6+/kj+vv5I/r7+iO6+/kjuvv5I7r7+iO6+/ojuviMI9u8IAv37giC5f0eQ3L8jyO7fEWQB3L8jyAK4f0cQB3D/jiAG4P4dQRDdvyMIgv07ghCA+3cEAAB/5j3OZyL+R/x9/mf84/zP+Af5n/Fv8j/jv+R/xu/k/8b/xP+M38z/jN/M/4zfzP+M38z/jB/L/x/k/8Z/yT/M/5R/m/8o/xf+Uf5v/KP8n/lH+X/yj/K/5R/lP8r/yD/K/8g/xv/IP8b/yD/G/8g/xv/IP8r/yj/Lf8s/yz/Lf8s/yz/LP8s/yz/LP8r/y//K/8v/yv/L/8r/y//K/8v/yv/K/8r/yb/J/8n/yf/J/8n/yf/J/8n/yf/Lv8u/y7/Lv8u/y7/Lv8u/y7/Lv8q/yr/Kv8q/yr/Kv8q/yr/Kv8q/yr/Kv8k/yT/JP8k/yT/JP8k/yT/JP8s/yz/LP8s/yz/LP8s/yz/LP8s/yz/LP8q/yr/Kv8q/yr/Kv8q/yr/Kv8q/yr/Kv8u/y7/Lv8u/y7/Lv8u/y7/Lv8u/y7/Lv8n/yf/J/8n/yf/J/8n/yf/J/8n/yf/J/8k/yT/JP8k/yT/JP8k/yT/JP8k/yT/Kv8q/yr/Kv8q/yr/Kv8q/yr/Kv8q/yr/LP8s/yz/LP8s/yz/LP8s/yz/LP8s/yz/Lv8u/y7/Lv8u/y7/Lv8u/y7/Lv8u/y7/J/8n/yf/J/8n/yf/J/8n/yf/J/8n/yf/JP8k/yT/JP8k/yT/JP8k/yT/JP8k/yz/LP8s/yz/LP8s/yz/LP8s/yz/LP8s/yr/Kv8q/yr/Kv8q/yr/Kv8q/yr/Kv8q/y7/Lv8u/y7/Lv8u/y7/Lv8u/y7/Lv8n/yf/J/8n/yf/J/8n/yf/J/8n/yf/J/8k/yT/JP8k/yT/JP8k/yT/JP8k/wEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgH/bPy1/K5G65kSyAAAAAElFTkSuQmCC" alt="A diagram showing the address bar at the top of a web browser.">
-            </div>
-        </section>
+    <div class="tabs">
+      <button class="tab active" data-range="short_term">Last 4 weeks</button>
+      <button class="tab" data-range="medium_term">Last 6 months</button>
+      <button class="tab" data-range="long_term">All time</button>
+    </div>
 
-        <section class="step-card">
-            <div class="step-title">
-                <div class="step-number">2</div>
-                <h2>Copy the Detected URL</h2>
-            </div>
-            <p>This page has automatically detected the full URL for you. Click the button below to instantly copy it to your clipboard.</p>
-            <div class="url-display-box" id="urlDisplay">Detecting URL...</div>
-            <button class="copy-button" id="copyButton">
-                <span class="text-original">Copy URL</span>
-                <span class="text-success">✔ Copied!</span>
-            </button>
-        </section>
+    <div id="status" class="muted" style="margin-bottom:12px"></div>
 
-        <section class="step-card">
-            <div class="step-title">
-                <div class="step-number">3</div>
-                <h2>Paste and Complete</h2>
-            </div>
-            <p>Finally, return to the application or terminal window that sent you here and paste the URL to finish the authentication.</p>
-        </section>
-    </main>
+    <div id="grid" class="grid" style="display:none">
+      <div class="card">
+        <h3>Top Artists</h3>
+        <ol id="artists" class="list"></ol>
+      </div>
+      <div class="card">
+        <h3>Top Tracks</h3>
+        <ol id="tracks" class="list"></ol>
+      </div>
+      <div class="card">
+        <h3>Your Top Genres</h3>
+        <div id="genres" class="chips"></div>
+      </div>
+      <div class="card">
+        <h3>Vibes (Top Tracks Averages)</h3>
+        <div id="vibes"></div>
+      </div>
+      <div class="card">
+        <h3>Recently Played (last ~50)</h3>
+        <div id="recent" class="recent"></div>
+      </div>
+      <div class="card">
+        <h3>Shareable Summary (Copy/Paste)</h3>
+        <div id="summary" style="white-space:pre-wrap; font-size:12px"></div>
+      </div>
+    </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const urlDisplayBox = document.getElementById('urlDisplay');
-            const copyButton = document.getElementById('copyButton');
-            
-            const fullUrl = window.location.href;
-            urlDisplayBox.textContent = fullUrl;
+    <div class="footer">Built with ❤️ using the Spotify Web API. This app is not affiliated with Spotify.</div>
+  </div>
 
-            copyButton.addEventListener('click', () => {
-                if (copyButton.classList.contains('copied')) return;
+  <script>
+  const CLIENT_ID = '6f1bcbe56bef45d28dec0ac09ca8c817';
+  const REDIRECT_URI = 'https://www.longno.co.uk/spotify'; // must exactly match your Spotify app Redirect URI
+  const SCOPES = ['user-top-read', 'user-read-recently-played'].join(' ');
+  function randomString(length = 64) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+    let str = '';
+    const array = new Uint8Array(length);
+    crypto.getRandomValues(array);
+    for (let i = 0; i < length; i++) str += chars[array[i] % chars.length];
+    return str;
+  }
+  async function sha256(plain) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(plain);
+    const hash = await crypto.subtle.digest('SHA-256', data);
+    return new Uint8Array(hash);
+  }
+  function b64url(bytes) {
+    let str = btoa(String.fromCharCode(...bytes));
+    return str.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  async function createCodeChallenge(verifier) { return b64url(await sha256(verifier)); }
+  function saveAuth(obj){ localStorage.setItem('spotify_auth', JSON.stringify(obj)); }
+  function loadAuth(){ try { return JSON.parse(localStorage.getItem('spotify_auth')) || null; } catch { return null; } }
+  function clearAuth(){ localStorage.removeItem('spotify_auth'); }
 
-                navigator.clipboard.writeText(fullUrl).then(() => {
-                    copyButton.classList.add('copied');
-                    setTimeout(() => {
-                        copyButton.classList.remove('copied');
-                    }, 2500);
-                }).catch(err => {
-                    console.error('Failed to copy URL: ', err);
-                    alert('Could not copy URL automatically. Please copy it manually from the box.');
-                });
-            });
+  async function tokenExchange({ code, verifier }){
+    const body = new URLSearchParams({
+      client_id: CLIENT_ID,
+      grant_type: 'authorization_code',
+      code,
+      redirect_uri: REDIRECT_URI,
+      code_verifier: verifier,
+    });
+    const res = await fetch('https://accounts.spotify.com/api/token', { method:'POST', headers:{ 'Content-Type':'application/x-www-form-urlencoded' }, body });
+    if(!res.ok) throw new Error('Token exchange failed');
+    return res.json();
+  }
+  async function refreshToken(refresh_token){
+    const body = new URLSearchParams({ client_id: CLIENT_ID, grant_type:'refresh_token', refresh_token });
+    const res = await fetch('https://accounts.spotify.com/api/token', { method:'POST', headers:{ 'Content-Type':'application/x-www-form-urlencoded' }, body });
+    if(!res.ok) throw new Error('Refresh failed');
+    return res.json();
+  }
+  async function apiGet(token, path, params={}){
+    const url = new URL(`https://api.spotify.com/v1/${path}`);
+    Object.entries(params).forEach(([k,v]) => url.searchParams.set(k, v));
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    if(res.status === 401) throw new Error('unauthorized');
+    if(!res.ok) throw new Error(`API error: ${res.status}`);
+    return res.json();
+  }
+  const getMe = (t) => apiGet(t, 'me');
+  const getTop = (t, type='tracks', time_range='medium_term', limit=20) => apiGet(t, `me/top/${type}`, { time_range, limit });
+  const getAudioFeatures = (t, ids=[]) => ids.length ? apiGet(t, 'audio-features', { ids: ids.slice(0,100).join(',') }) : Promise.resolve({ audio_features: [] });
+  const getRecentlyPlayed = (t, limit=50) => apiGet(t, 'me/player/recently-played', { limit: String(limit) });
 
-            const animatedCards = document.querySelectorAll('.step-card');
+  let ACCESS_TOKEN = loadAuth()?.access_token || null;
+  let REFRESH_TOKEN = loadAuth()?.refresh_token || null;
+  let EXPIRES_IN = loadAuth()?.expires_in || 0;
+  let OBTAINED_AT = loadAuth()?.obtained_at || 0;
+  let PROFILE = null;
+  let DATA = { artists: {}, tracks: {} };
+  let FEATURES = {};
+  let RECENT = null;
+  let TIME_RANGE = 'short_term';
 
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach((entry, index) => {
-                    if (entry.isIntersecting) {
-                        entry.target.style.transition = `opacity 0.6s ease-out ${index * 0.2}s, transform 0.6s ease-out ${index * 0.2}s`;
-                        entry.target.classList.add('visible');
-                        observer.unobserve(entry.target);
-                    }
-                });
-            }, {
-                threshold: 0.1
-            });
+  const $ = (sel) => document.querySelector(sel);
+  function setStatus(msg){ $('#status').textContent = msg || ''; }
+  function setAuthArea(){
+    const el = $('#authArea');
+    if(ACCESS_TOKEN){
+      const img = PROFILE?.images?.[0]?.url ? `<img src="${PROFILE.images[0].url}" class="avatar"/>` : `<div class="avatar">${(PROFILE?.display_name||'U')[0]}</div>`;
+      el.innerHTML = `
+        <div class="profile">
+          ${img}
+          <div>
+            <div style="font-weight:700;font-size:14px">${PROFILE?.display_name||'User'}</div>
+            <div class="muted" style="font-size:12px">${(PROFILE?.product||'').toUpperCase()}</div>
+          </div>
+          <button class="btn" id="logoutBtn" style="margin-left:8px">Logout</button>
+        </div>`;
+      $('#logoutBtn').onclick = () => { clearAuth(); location.reload(); };
+    } else {
+      el.innerHTML = `<button id="loginBtn" class="btn primary">Log in with Spotify</button>`;
+      $('#loginBtn').onclick = beginLogin;
+    }
+  }
+  function showSetup(show){ $('#setup').style.display = show ? 'block' : 'none'; }
+  function showGrid(show){ $('#grid').style.display = show ? 'grid' : 'none'; }
 
-            animatedCards.forEach(card => {
-                observer.observe(card);
-            });
-        });
-    </script>
+  function renderList(container, items, isTrack=false){
+    container.innerHTML = items.slice(0,10).map((item, i) => {
+      const img = isTrack ? (item.album?.images?.[2]?.url || item.album?.images?.[0]?.url) : (item.images?.[2]?.url || item.images?.[0]?.url);
+      const sub = isTrack ? (item.artists?.map(a=>a.name).join(', ')) : (item.genres?.slice(0,2).join(' • '));
+      return `<li class="row">
+        <span class="rank">${i+1}.</span>
+        <img class="thumb" src="${img||''}" alt=""/>
+        <div class="meta">
+          <div class="name">${item.name}</div>
+          <div class="sub">${sub||''}</div>
+        </div>
+      </li>`;
+    }).join('');
+  }
+  function renderGenres(container, artists){
+    const counts = new Map();
+    artists.forEach(a => (a.genres||[]).forEach(g => counts.set(g, (counts.get(g)||0)+1)));
+    const top = [...counts.entries()].sort((a,b)=>b[1]-a[1]).slice(0,15).map(([g])=>`<span class="chip">${g}</span>`).join('');
+    container.innerHTML = top || '<span class="muted">No genres available.</span>';
+  }
+  function averageFeatures(list){
+    const keys = ['danceability','energy','valence','acousticness','instrumentalness','liveness','speechiness','tempo'];
+    if(!list?.length) return {};
+    const out = {}; keys.forEach(k=>out[k]=0);
+    list.forEach(f=>keys.forEach(k=> out[k]+= (f?.[k]||0)));
+    keys.forEach(k=> out[k] = out[k]/list.length);
+    return out;
+  }
+  function renderVibes(container, avg){
+    container.innerHTML = '';
+    const maxes = { tempo: 220 };
+    Object.entries(avg).forEach(([k,v])=>{
+      const max = k==='tempo' ? maxes.tempo : 1;
+      const pct = Math.max(0, Math.min(100, (v/max)*100));
+      const wrap = document.createElement('div');
+      wrap.className = 'bar';
+      wrap.innerHTML = `
+        <div class="bar-top"><span>${labelize(k)}</span><span>${typeof v==='number'?v.toFixed(2):v}</span></div>
+        <div class="bar-rail"><div class="bar-fill" style="width:${pct}%"></div></div>`;
+      container.appendChild(wrap);
+    });
+    if(!Object.keys(avg).length){ container.innerHTML = '<span class="muted">No audio features available.</span>'; }
+  }
+  function labelize(k){
+    if(k==='valence') return 'Valence (Positivity)';
+    return k.charAt(0).toUpperCase()+k.slice(1);
+  }
+  function renderRecent(container, items){
+    if(!items){ container.innerHTML = '<span class="muted">Not available.</span>'; return; }
+    container.innerHTML = items.map(it=>{
+      const t = it.track;
+      const img = t?.album?.images?.[2]?.url || t?.album?.images?.[0]?.url || '';
+      return `<div class="row">
+        <img class="thumb" src="${img}" alt=""/>
+        <div class="meta">
+          <div class="name">${t?.name||''}</div>
+          <div class="sub">${t?.artists?.map(a=>a.name).join(', ')||''}</div>
+        </div>
+        <div class="muted" style="font-size:11px">${new Date(it.played_at).toLocaleString()}</div>
+      </div>`;
+    }).join('');
+  }
+  function renderSummary(container, profile, rangeKey, tracks, artists, genres){
+    const topGenres = genres.slice(0,5).map(([g])=>g).join(', ');
+    const topTracks = tracks.slice(0,5).map((t,i)=>`${i+1}. ${t.name} — ${t.artists?.map(a=>a.name).join(', ')}`).join('\n');
+    const topArtists = artists.slice(0,5).map((a,i)=>`${i+1}. ${a.name}`).join('\n');
+    container.textContent = `User: ${profile?.display_name||'Unknown'}\n\nTime Range:\n${rangeKey.replace('_',' ')}\n\nTop 5 Tracks:\n${topTracks}\n\nTop 5 Artists:\n${topArtists}\n\nTop Genres:\n${topGenres}`;
+  }
 
+  async function maybeHandleRedirect(){
+    const params = new URLSearchParams(location.search);
+    const code = params.get('code');
+    const stored = loadAuth();
+    if(!ACCESS_TOKEN && code && stored?.code_verifier){
+      try {
+        const data = await tokenExchange({ code, verifier: stored.code_verifier });
+        const auth = { ...stored, access_token: data.access_token, refresh_token: data.refresh_token || stored.refresh_token, expires_in: data.expires_in, obtained_at: Date.now() };
+        saveAuth(auth);
+        ACCESS_TOKEN = auth.access_token; REFRESH_TOKEN = auth.refresh_token; EXPIRES_IN = auth.expires_in; OBTAINED_AT = auth.obtained_at;
+        history.replaceState({}, document.title, location.origin + location.pathname);
+      } catch(err){ setStatus('Failed to sign in. Please try again.'); }
+    }
+  }
+
+  async function ensureFreshToken(){
+    if(!ACCESS_TOKEN || !REFRESH_TOKEN) return;
+    const age = (Date.now() - (OBTAINED_AT||0))/1000;
+    if(age > (EXPIRES_IN||3600) - 60){
+      try{
+        const r = await refreshToken(REFRESH_TOKEN);
+        ACCESS_TOKEN = r.access_token; EXPIRES_IN = r.expires_in; OBTAINED_AT = Date.now();
+        const stored = loadAuth()||{}; saveAuth({ ...stored, access_token: ACCESS_TOKEN, expires_in: EXPIRES_IN, obtained_at: OBTAINED_AT });
+      }catch(e){ console.warn('Refresh failed', e); }
+    }
+  }
+
+  async function loadAll(){
+    if(!ACCESS_TOKEN) return;
+    setStatus('Loading your stats…');
+    try{
+      PROFILE = await getMe(ACCESS_TOKEN);
+      const [aS, aM, aL] = await Promise.all([
+        getTop(ACCESS_TOKEN,'artists','short_term',20),
+        getTop(ACCESS_TOKEN,'artists','medium_term',20),
+        getTop(ACCESS_TOKEN,'artists','long_term',20),
+      ]);
+      const [tS, tM, tL] = await Promise.all([
+        getTop(ACCESS_TOKEN,'tracks','short_term',20),
+        getTop(ACCESS_TOKEN,'tracks','medium_term',20),
+        getTop(ACCESS_TOKEN,'tracks','long_term',20),
+      ]);
+      DATA = { artists: { short_term: aS.items, medium_term: aM.items, long_term: aL.items }, tracks: { short_term: tS.items, medium_term: tM.items, long_term: tL.items } };
+      const ids = (DATA.tracks[TIME_RANGE]||[]).map(t=>t.id);
+      const feat = await getAudioFeatures(ACCESS_TOKEN, ids);
+      FEATURES[TIME_RANGE] = averageFeatures(feat.audio_features||[]);
+      try { RECENT = await getRecentlyPlayed(ACCESS_TOKEN, 50); } catch { /* optional */ }
+      showGrid(true);
+      renderEverything();
+      setStatus('');
+    }catch(e){
+      console.error(e);
+      setStatus(e.message?.includes('unauthorized') ? 'Session expired. Please log in again.' : "Couldn't load your stats.");
+    }
+  }
+
+  function renderEverything(){
+    setAuthArea();
+    const artists = DATA.artists[TIME_RANGE] || [];
+    const tracks = DATA.tracks[TIME_RANGE] || [];
+    renderList($('#artists'), artists, false);
+    renderList($('#tracks'), tracks, true);
+    const counts = new Map();
+    artists.forEach(a => (a.genres||[]).forEach(g => counts.set(g,(counts.get(g)||0)+1)));
+    const sortedGenres = [...counts.entries()].sort((a,b)=>b[1]-a[1]);
+    $('#genres').innerHTML = sortedGenres.slice(0,15).map(([g])=>`<span class="chip">${g}</span>`).join('');
+    const avg = FEATURES[TIME_RANGE] || {};
+    renderVibes($('#vibes'), avg);
+    renderRecent($('#recent'), RECENT?.items);
+    renderSummary($('#summary'), PROFILE, TIME_RANGE, tracks, artists, sortedGenres);
+  }
+
+  async function onRangeClick(e){
+    if(!e.target.classList.contains('tab')) return;
+    document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+    e.target.classList.add('active');
+    TIME_RANGE = e.target.getAttribute('data-range');
+    if(ACCESS_TOKEN){
+      const ids = (DATA.tracks[TIME_RANGE]||[]).map(t=>t.id);
+      const feat = await getAudioFeatures(ACCESS_TOKEN, ids);
+      FEATURES[TIME_RANGE] = averageFeatures(feat.audio_features||[]);
+      renderEverything();
+    }
+  }
+
+  async function beginLogin(){
+    if(!CLIENT_ID){ showSetup(true); alert('Set CLIENT_ID in the file first.'); return; }
+    const code_verifier = randomString(64);
+    const code_challenge = await createCodeChallenge(code_verifier);
+    saveAuth({ code_verifier });
+    const authUrl = new URL('https://accounts.spotify.com/authorize');
+    authUrl.searchParams.set('client_id', CLIENT_ID);
+    authUrl.searchParams.set('response_type', 'code');
+    authUrl.searchParams.set('redirect_uri', REDIRECT_URI);
+    authUrl.searchParams.set('scope', SCOPES);
+    authUrl.searchParams.set('code_challenge_method', 'S256');
+    authUrl.searchParams.set('code_challenge', code_challenge);
+    location.href = authUrl.toString();
+  }
+
+  document.addEventListener('click', onRangeClick);
+  (async function init(){
+    showSetup(false);
+    await maybeHandleRedirect();
+    await ensureFreshToken();
+    setAuthArea();
+    if(ACCESS_TOKEN){ await loadAll(); }
+  })();
+  </script>
 </body>
 </html>
