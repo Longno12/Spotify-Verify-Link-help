@@ -123,6 +123,7 @@
   const CLIENT_ID = '6f1bcbe56bef45d28dec0ac09ca8c817';
   const REDIRECT_URI = 'https://www.longno.co.uk/spotify'; // must exactly match your Spotify app Redirect URI
   const SCOPES = ['user-top-read', 'user-read-recently-played'].join(' ');
+
   function randomString(length = 64) {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
     let str = '';
@@ -177,13 +178,14 @@
   const getAudioFeatures = (t, ids=[]) => ids.length ? apiGet(t, 'audio-features', { ids: ids.slice(0,100).join(',') }) : Promise.resolve({ audio_features: [] });
   const getRecentlyPlayed = (t, limit=50) => apiGet(t, 'me/player/recently-played', { limit: String(limit) });
 
+  // ========================== STATE =========================
   let ACCESS_TOKEN = loadAuth()?.access_token || null;
   let REFRESH_TOKEN = loadAuth()?.refresh_token || null;
   let EXPIRES_IN = loadAuth()?.expires_in || 0;
   let OBTAINED_AT = loadAuth()?.obtained_at || 0;
   let PROFILE = null;
   let DATA = { artists: {}, tracks: {} };
-  let FEATURES = {};
+  let FEATURES = {}; // per range averages
   let RECENT = null;
   let TIME_RANGE = 'short_term';
 
@@ -192,7 +194,8 @@
   function setAuthArea(){
     const el = $('#authArea');
     if(ACCESS_TOKEN){
-      const img = PROFILE?.images?.[0]?.url ? `<img src="${PROFILE.images[0].url}" class="avatar"/>` : `<div class="avatar">${(PROFILE?.display_name||'U')[0]}</div>`;
+      const initial = (PROFILE?.display_name||'U').slice(0,1).toUpperCase();
+      const img = PROFILE?.images?.[0]?.url ? `<img src="${PROFILE.images[0].url}" class="avatar"/>` : `<div class="avatar">${initial}</div>`;
       el.innerHTML = `
         <div class="profile">
           ${img}
@@ -202,14 +205,17 @@
           </div>
           <button class="btn" id="logoutBtn" style="margin-left:8px">Logout</button>
         </div>`;
-      $('#logoutBtn').onclick = () => { clearAuth(); location.reload(); };
+      const btn = document.getElementById('logoutBtn');
+      if(btn){ btn.onclick = () => { clearAuth(); location.reload(); }; }
     } else {
-      el.innerHTML = `<button id="loginBtn" class="btn primary">Log in with Spotify</button>`;
-      $('#loginBtn').onclick = beginLogin;
+      const btnHtml = '<button id="loginBtn" class="btn primary">Log in with Spotify</button>';
+      el.innerHTML = btnHtml;
+      const btn = document.getElementById('loginBtn');
+      if(btn){ btn.onclick = beginLogin; }
     }
   }
-  function showSetup(show){ $('#setup').style.display = show ? 'block' : 'none'; }
-  function showGrid(show){ $('#grid').style.display = show ? 'grid' : 'none'; }
+  function showSetup(show){ const el = document.getElementById('setup'); if(el){ el.style.display = show ? 'block' : 'none'; } }
+  function showGrid(show){ const el = document.getElementById('grid'); if(el){ el.style.display = show ? 'grid' : 'none'; } }
 
   function renderList(container, items, isTrack=false){
     container.innerHTML = items.slice(0,10).map((item, i) => {
@@ -225,12 +231,6 @@
       </li>`;
     }).join('');
   }
-  function renderGenres(container, artists){
-    const counts = new Map();
-    artists.forEach(a => (a.genres||[]).forEach(g => counts.set(g, (counts.get(g)||0)+1)));
-    const top = [...counts.entries()].sort((a,b)=>b[1]-a[1]).slice(0,15).map(([g])=>`<span class="chip">${g}</span>`).join('');
-    container.innerHTML = top || '<span class="muted">No genres available.</span>';
-  }
   function averageFeatures(list){
     const keys = ['danceability','energy','valence','acousticness','instrumentalness','liveness','speechiness','tempo'];
     if(!list?.length) return {};
@@ -242,21 +242,18 @@
   function renderVibes(container, avg){
     container.innerHTML = '';
     const maxes = { tempo: 220 };
-    Object.entries(avg).forEach(([k,v])=>{
+    const entries = Object.entries(avg);
+    if(entries.length === 0){ container.innerHTML = '<span class="muted">No audio features available.</span>'; return; }
+    entries.forEach(([k,v])=>{
       const max = k==='tempo' ? maxes.tempo : 1;
       const pct = Math.max(0, Math.min(100, (v/max)*100));
       const wrap = document.createElement('div');
       wrap.className = 'bar';
       wrap.innerHTML = `
-        <div class="bar-top"><span>${labelize(k)}</span><span>${typeof v==='number'?v.toFixed(2):v}</span></div>
+        <div class="bar-top"><span>${k==='valence' ? 'Valence (Positivity)' : (k.charAt(0).toUpperCase()+k.slice(1))}</span><span>${typeof v==='number'?v.toFixed(2):v}</span></div>
         <div class="bar-rail"><div class="bar-fill" style="width:${pct}%"></div></div>`;
       container.appendChild(wrap);
     });
-    if(!Object.keys(avg).length){ container.innerHTML = '<span class="muted">No audio features available.</span>'; }
-  }
-  function labelize(k){
-    if(k==='valence') return 'Valence (Positivity)';
-    return k.charAt(0).toUpperCase()+k.slice(1);
   }
   function renderRecent(container, items){
     if(!items){ container.innerHTML = '<span class="muted">Not available.</span>'; return; }
@@ -323,12 +320,32 @@
         getTop(ACCESS_TOKEN,'tracks','long_term',20),
       ]);
       DATA = { artists: { short_term: aS.items, medium_term: aM.items, long_term: aL.items }, tracks: { short_term: tS.items, medium_term: tM.items, long_term: tL.items } };
+
       const ids = (DATA.tracks[TIME_RANGE]||[]).map(t=>t.id);
       const feat = await getAudioFeatures(ACCESS_TOKEN, ids);
       FEATURES[TIME_RANGE] = averageFeatures(feat.audio_features||[]);
+
       try { RECENT = await getRecentlyPlayed(ACCESS_TOKEN, 50); } catch { /* optional */ }
+
       showGrid(true);
-      renderEverything();
+      const artistsEl = document.getElementById('artists');
+      const tracksEl = document.getElementById('tracks');
+      const genresEl = document.getElementById('genres');
+      const vibesEl = document.getElementById('vibes');
+      const recentEl = document.getElementById('recent');
+      const summaryEl = document.getElementById('summary');
+      const artists = DATA.artists[TIME_RANGE] || [];
+      const tracks = DATA.tracks[TIME_RANGE] || [];
+      renderList(artistsEl, artists, false);
+      renderList(tracksEl, tracks, true);
+      const counts = new Map();
+      artists.forEach(a => (a.genres||[]).forEach(g => counts.set(g,(counts.get(g)||0)+1)));
+      const sortedGenres = [...counts.entries()].sort((a,b)=>b[1]-a[1]);
+      genresEl.innerHTML = sortedGenres.slice(0,15).map(([g])=>`<span class="chip">${g}</span>`).join('');
+      renderVibes(vibesEl, FEATURES[TIME_RANGE] || {});
+      renderRecent(recentEl, RECENT?.items);
+      renderSummary(summaryEl, PROFILE, TIME_RANGE, tracks, artists, sortedGenres);
+
       setStatus('');
     }catch(e){
       console.error(e);
@@ -336,33 +353,27 @@
     }
   }
 
-  function renderEverything(){
-    setAuthArea();
-    const artists = DATA.artists[TIME_RANGE] || [];
-    const tracks = DATA.tracks[TIME_RANGE] || [];
-    renderList($('#artists'), artists, false);
-    renderList($('#tracks'), tracks, true);
-    const counts = new Map();
-    artists.forEach(a => (a.genres||[]).forEach(g => counts.set(g,(counts.get(g)||0)+1)));
-    const sortedGenres = [...counts.entries()].sort((a,b)=>b[1]-a[1]);
-    $('#genres').innerHTML = sortedGenres.slice(0,15).map(([g])=>`<span class="chip">${g}</span>`).join('');
-    const avg = FEATURES[TIME_RANGE] || {};
-    renderVibes($('#vibes'), avg);
-    renderRecent($('#recent'), RECENT?.items);
-    renderSummary($('#summary'), PROFILE, TIME_RANGE, tracks, artists, sortedGenres);
-  }
-
-  async function onRangeClick(e){
-    if(!e.target.classList.contains('tab')) return;
+  function onRangeClick(e){
+    const t = e.target;
+    if(!t.classList || !t.classList.contains('tab')) return;
     document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
-    e.target.classList.add('active');
-    TIME_RANGE = e.target.getAttribute('data-range');
-    if(ACCESS_TOKEN){
-      const ids = (DATA.tracks[TIME_RANGE]||[]).map(t=>t.id);
-      const feat = await getAudioFeatures(ACCESS_TOKEN, ids);
+    t.classList.add('active');
+    TIME_RANGE = t.getAttribute('data-range');
+    if(!ACCESS_TOKEN) return;
+    const ids = (DATA.tracks[TIME_RANGE]||[]).map(tr=>tr.id);
+    getAudioFeatures(ACCESS_TOKEN, ids).then(feat => {
       FEATURES[TIME_RANGE] = averageFeatures(feat.audio_features||[]);
-      renderEverything();
-    }
+      const artists = DATA.artists[TIME_RANGE] || [];
+      const tracks = DATA.tracks[TIME_RANGE] || [];
+      renderList(document.getElementById('artists'), artists, false);
+      renderList(document.getElementById('tracks'), tracks, true);
+      const counts = new Map();
+      artists.forEach(a => (a.genres||[]).forEach(g => counts.set(g,(counts.get(g)||0)+1)));
+      const sortedGenres = [...counts.entries()].sort((a,b)=>b[1]-a[1]);
+      document.getElementById('genres').innerHTML = sortedGenres.slice(0,15).map(([g])=>`<span class="chip">${g}</span>`).join('');
+      renderVibes(document.getElementById('vibes'), FEATURES[TIME_RANGE] || {});
+      renderSummary(document.getElementById('summary'), PROFILE, TIME_RANGE, tracks, artists, sortedGenres);
+    });
   }
 
   async function beginLogin(){
@@ -377,10 +388,28 @@
     authUrl.searchParams.set('scope', SCOPES);
     authUrl.searchParams.set('code_challenge_method', 'S256');
     authUrl.searchParams.set('code_challenge', code_challenge);
-    location.href = authUrl.toString();
+    const w = window.open(authUrl.toString(), '_blank');
+    if(!w){
+      alert('Pop-up blocked. Please allow pop-ups for this site, or open the link manually: ' + authUrl.toString());
+    }
   }
 
   document.addEventListener('click', onRangeClick);
+
+  window.addEventListener('storage', async (e) => {
+    if(e.key === 'spotify_auth'){
+      const auth = loadAuth();
+      if(auth?.access_token){
+        ACCESS_TOKEN = auth.access_token;
+        REFRESH_TOKEN = auth.refresh_token;
+        EXPIRES_IN = auth.expires_in;
+        OBTAINED_AT = auth.obtained_at;
+        setAuthArea();
+        await loadAll();
+      }
+    }
+  });
+
   (async function init(){
     showSetup(false);
     await maybeHandleRedirect();
@@ -388,6 +417,6 @@
     setAuthArea();
     if(ACCESS_TOKEN){ await loadAll(); }
   })();
-  </script>
+</script>
 </body>
 </html>
